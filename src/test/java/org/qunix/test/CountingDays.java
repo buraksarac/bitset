@@ -1,9 +1,10 @@
 package org.qunix.test;
 
 import java.util.concurrent.ThreadLocalRandom;
-import org.qunix.LazyBitSet;
 
-public class QuickTest {
+import org.qunix.bitset.LazyBitSet;
+
+public class CountingDays {
 
   public static void main(String[] args) {
     int rows = 5;
@@ -11,7 +12,7 @@ public class QuickTest {
     LazyBitSet bitSet = new LazyBitSet(rows * cols);
     for (int i = 0; i < rows; i++) {
       for (int j = 0; j < cols; j++) {
-        bitSet.onOff(i * cols + j, ThreadLocalRandom.current().nextBoolean());
+        bitSet.add(ThreadLocalRandom.current().nextBoolean());
       }
     }
 

@@ -1,6 +1,6 @@
-package org.qunix;
+package org.qunix.bitset;
 
-final class ImmutableBitSet extends BitSet implements IBitSet {
+public final class ImmutableBitSet extends BitSet implements IBitSet {
 
   ImmutableBitSet(BitSet bitset) {
     super(bitset.size);
@@ -26,5 +26,10 @@ final class ImmutableBitSet extends BitSet implements IBitSet {
   public Boolean off(int p) {
     throw new UnsupportedOperationException();
   }
+  
+  @Override
+	public boolean add(Boolean e) {
+	  throw new UnsupportedOperationException();
+	}
   
 }

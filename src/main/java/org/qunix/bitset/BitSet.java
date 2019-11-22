@@ -1,4 +1,4 @@
-package org.qunix;
+package org.qunix.bitset;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -27,24 +27,24 @@ public class BitSet implements Iterable<Boolean>, IBitSet, Collection<Boolean> {
 
 	private static final int LOG_64 = 6;
 	private static final int MOD = (1 << LOG_64) - 1;
-	protected transient int modCount = 0;
 
 	protected transient long[] bucket;
 	protected int actualCapacity;
 	protected int size;
+	protected int capacity;
 
 	public BitSet() {
-		this.size = DEFAULT_CAPACITY;
-		this.actualCapacity = 1;
+		this.capacity = DEFAULT_CAPACITY;
+		this.actualCapacity = getActaulCapacity(this.capacity);
 		this.bucket = new long[actualCapacity];
 	}
 
-	public BitSet(int size) {
-		if (size < 0) {
-			throw new IllegalArgumentException("Invalid size " + size);
+	public BitSet(int capacity) {
+		if (capacity < 0) {
+			throw new IllegalArgumentException("Invalid capacity " + capacity);
 		}
-		this.size = size;
-		this.actualCapacity = getActaulCapacity(size);
+		this.capacity = capacity;
+		this.actualCapacity = getActaulCapacity(this.capacity);
 		this.bucket = new long[actualCapacity];
 	}
 
@@ -92,11 +92,17 @@ public class BitSet implements Iterable<Boolean>, IBitSet, Collection<Boolean> {
 		}
 	}
 
+	public void reSize(int newSize) {
+		ensureCapacityInternal(newSize);
+		this.size = newSize;
+	}
+
 	private Boolean ifValidPosition(int position, Supplier<Long> supplier) {
-		if (position < 0 || position >= this.size) {
-			throw new ArrayIndexOutOfBoundsException();
+		if (position >= 0 && position <= this.size) {
+			return supplier.get() != 0;
 		}
-		return supplier.get() != 0;
+		throw new ArrayIndexOutOfBoundsException(position + " is not valid for size " + this.size);
+
 	}
 
 	public IBitSet immutableCopy() {
@@ -153,7 +159,7 @@ public class BitSet implements Iterable<Boolean>, IBitSet, Collection<Boolean> {
 
 	@Override
 	public boolean isEmpty() {
-		return this.size != 0;
+		return this.size == 0;
 	}
 
 	/**
@@ -216,8 +222,8 @@ public class BitSet implements Iterable<Boolean>, IBitSet, Collection<Boolean> {
 		if (e == null) {
 			throw new NullPointerException("Can not add null value");
 		}
-		ensureCapacityInternal(size + 1);
-		return onOff(size++, e);
+		ensureCapacityInternal(this.size + 1);
+		return onOff(this.size++, e);
 	}
 
 	/**
@@ -241,8 +247,8 @@ public class BitSet implements Iterable<Boolean>, IBitSet, Collection<Boolean> {
 	@Deprecated
 	@Override
 	public boolean addAll(Collection<? extends Boolean> c) {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException();
+		c.forEach(this::add);
+		return true;
 	}
 
 	/**
@@ -299,16 +305,15 @@ public class BitSet implements Iterable<Boolean>, IBitSet, Collection<Boolean> {
 	}
 
 	private void ensureExplicitCapacity(int minCapacity) {
-		modCount++;
 
 		// overflow-conscious code
-		if (minCapacity - this.size > 0)
+		if (minCapacity - this.capacity > 0)
 			grow(minCapacity);
 	}
 
 	private void grow(int minCapacity) {
 		// overflow-conscious code
-		int oldCapacity = this.size;
+		int oldCapacity = this.capacity;
 		int newCapacity = oldCapacity + (oldCapacity >> 1);
 		if (newCapacity - minCapacity < 0)
 			newCapacity = minCapacity;
@@ -325,9 +330,9 @@ public class BitSet implements Iterable<Boolean>, IBitSet, Collection<Boolean> {
 		return (minCapacity > MAX_ARRAY_SIZE) ? Integer.MAX_VALUE : MAX_ARRAY_SIZE;
 	}
 
-	private static final int getActaulCapacity(int size) {
-		int diff = size & MOD;
-		int actualCapacity = (size - diff) >>> LOG_64;
+	private static final int getActaulCapacity(int capacity) {
+		int diff = capacity & MOD;
+		int actualCapacity = (capacity - diff) >>> LOG_64;
 		actualCapacity += Math.min(1, diff);
 		return actualCapacity;
 	}

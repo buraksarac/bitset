@@ -1,4 +1,4 @@
-package org.qunix;
+package org.qunix.bitset;
 
 import java.util.Iterator;
 
