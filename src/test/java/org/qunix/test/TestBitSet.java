@@ -219,6 +219,17 @@ public class TestBitSet {
 		assertEquals(newSize, set.size());
 		IntStream.range(0, newSize).forEach(i -> assertEquals(i % 2 == 0, set.get(i)));
 	}
+	
+	@Test
+	public void testAdd2() {
+
+		BitSet set = new BitSet();
+		int newSize = ThreadLocalRandom.current().nextInt(100, 9999);
+
+		IntStream.range(0, newSize).mapToObj(i -> i % 2 != 0).forEach(set::add);
+		assertEquals(newSize, set.size());
+		IntStream.range(0, newSize).forEach(i -> assertEquals(i % 2 != 0, set.get(i)));
+	}
 
 	@Test
 	public void testSize() {
