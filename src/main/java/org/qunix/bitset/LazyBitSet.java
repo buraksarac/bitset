@@ -44,7 +44,7 @@ public class LazyBitSet extends BitSet implements IBitSet {
 	}
 
 	@Override
-	public boolean add(Boolean e) {
+	public boolean add(boolean e) {
 		return backed.add(e);
 	}
 

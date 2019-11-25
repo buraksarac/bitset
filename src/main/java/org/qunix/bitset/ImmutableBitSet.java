@@ -50,7 +50,7 @@ public final class ImmutableBitSet extends BitSet implements IBitSet {
 	}
 
 	@Override
-	public boolean add(Boolean e) {
+	public boolean add(boolean e) {
 		throw new UnsupportedOperationException();
 	}
 

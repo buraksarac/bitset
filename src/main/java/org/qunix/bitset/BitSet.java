@@ -11,6 +11,8 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.junit.Test;
+
 /**
  * COLLECTION IMPLEMENTATION NOT COMPLETE!!!
  * 
@@ -268,10 +270,7 @@ public class BitSet implements Iterable<Boolean>, IBitSet {
 		return this.size == 0;
 	}
 
-	public boolean add(Boolean e) {
-		if (e == null) {
-			throw new NullPointerException("Can not add null value");
-		}
+	public boolean add(boolean e) {
 		ensureCapacityInternal(this.size + 1);
 		return onOff(this.size++, e);
 	}
@@ -293,7 +292,6 @@ public class BitSet implements Iterable<Boolean>, IBitSet {
 		on(0, this.size);
 	}
 
-	@Deprecated
 	public void remove(int index) {
 
 		if (index < 0 || index >= this.size) {
@@ -301,6 +299,7 @@ public class BitSet implements Iterable<Boolean>, IBitSet {
 		}
 
 		throw new UnsupportedOperationException();
+
 	}
 
 	public String toBinaryString() {

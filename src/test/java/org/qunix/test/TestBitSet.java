@@ -23,6 +23,7 @@ import org.qunix.bitset.BitSet;
  */
 public class TestBitSet {
 
+	
 	@Test
 	public void testToBinaryString() {
 
