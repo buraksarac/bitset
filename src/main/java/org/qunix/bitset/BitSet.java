@@ -540,6 +540,15 @@ public class BitSet implements Iterable<Boolean>, IBitSet {
 		on(0, this.size);
 	}
 
+	/**
+	 *
+	 * remove method: removes bit from given position
+	 *
+	 * TODO: implementation
+	 *
+	 *
+	 * @param index void
+	 */
 	@Deprecated
 	public void remove(int index) {
 
