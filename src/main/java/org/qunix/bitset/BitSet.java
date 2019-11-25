@@ -22,15 +22,15 @@ import java.util.stream.StreamSupport;
 public class BitSet implements Iterable<Boolean>, IBitSet {
 
 	/**
-	 * rightmost bit set to one
+	 * One set 1L
 	 */
 	private static final long ONE_SET = 1L;
 	/**
-	 * None set
+	 * None set 0l
 	 */
 	private static final long NONE_SET = 0l;
 	/**
-	 * All set
+	 * All set -1l
 	 */
 	private static final long ALL_SET = -1l;
 
@@ -146,8 +146,8 @@ public class BitSet implements Iterable<Boolean>, IBitSet {
 	 *
 	 * on method: sets bit at position 1 for the given range
 	 * 
-	 * Ofset can be negative as fas as it doesnt out bound beginning (index 0) or
-	 * position as far as doesnt reach end of set (size - 1) or 0 that only start
+	 * Offset can be negative as fas as it doesnt out bound beginning (index 0) or
+	 * positive as far as doesnt reach end of set (size - 1) or 0 that only start
 	 * parameter will be on
 	 * 
 	 *
@@ -158,18 +158,18 @@ public class BitSet implements Iterable<Boolean>, IBitSet {
 	 * @throws {@link IndexOutOfBoundsException} if position is not valid
 	 */
 	public void on(int startInclusive, int offset) {
-		int endInclusive = startInclusive + offset;
-		if (startInclusive < 0 || startInclusive >= this.size || endInclusive > this.size) {
+		int end = startInclusive + offset;
+		if (startInclusive < 0 || startInclusive >= this.size || end > this.size) {
 			throw new IndexOutOfBoundsException();
 		}
 		if (offset == 0) {
 			on(startInclusive);
 		} else if (offset < 0) {
-			on(endInclusive + 1, -offset);
+			on(end + 1, -offset);
 		} else {
 			int index, endIndex;
 
-			if ((index = startInclusive >> LOG_64) == (endIndex = endInclusive - 1 >> LOG_64)) {
+			if ((index = startInclusive >> LOG_64) == (endIndex = end - 1 >> LOG_64)) {
 
 				bucket[index] |= ALL_SET >>> (LONG_SIZE - offset) << startInclusive;
 
@@ -178,7 +178,7 @@ public class BitSet implements Iterable<Boolean>, IBitSet {
 				for (int i = index + 1; i < endIndex; i++) {
 					bucket[i] = ALL_SET;
 				}
-				bucket[endIndex] |= ALL_SET >>> (LONG_SIZE - (endInclusive & MOD));
+				bucket[endIndex] |= ALL_SET >>> (LONG_SIZE - (end & MOD));
 			}
 		}
 
@@ -188,8 +188,8 @@ public class BitSet implements Iterable<Boolean>, IBitSet {
 	 *
 	 * off method: sets bits at position 0 for the given range
 	 * 
-	 * Ofset can be negative as fas as it doesnt out bound beginning (index 0) or
-	 * position as far as doesnt reach end of set (size - 1) or 0 that only start
+	 * Offset can be negative as fas as it doesnt out bound beginning (index 0) or
+	 * positive as far as doesnt reach end of set (size - 1) or 0 that only start
 	 * parameter will be on
 	 * 
 	 *
@@ -200,25 +200,25 @@ public class BitSet implements Iterable<Boolean>, IBitSet {
 	 * @throws {@link IndexOutOfBoundsException} if position is not valid
 	 */
 	public void off(int startInclusive, int offset) {
-		int endInclusive = startInclusive + offset;
-		if (startInclusive < 0 || startInclusive >= this.size || endInclusive > this.size) {
+		int end = startInclusive + offset;
+		if (startInclusive < 0 || startInclusive >= this.size || end > this.size) {
 			throw new IndexOutOfBoundsException();
 		}
 		if (offset == 0) {
 			off(startInclusive);
 		} else if (offset < 0) {
-			off(endInclusive + 1, -offset);
+			off(end + 1, -offset);
 		} else {
 			int index, endIndex;
 
-			if ((index = startInclusive >> LOG_64) == (endIndex = endInclusive - 1 >> LOG_64)) {
+			if ((index = startInclusive >> LOG_64) == (endIndex = end - 1 >> LOG_64)) {
 				bucket[index] &= ~(ALL_SET >>> (LONG_SIZE - offset) << startInclusive);
 			} else {
 				bucket[index] &= ~(ALL_SET << (startInclusive & MOD));
 				for (int i = index + 1; i < endIndex; i++) {
 					bucket[i] = NONE_SET;
 				}
-				bucket[endIndex] &= ~(ALL_SET >>> (LONG_SIZE - (endInclusive & MOD)));
+				bucket[endIndex] &= ~(ALL_SET >>> (LONG_SIZE - (end & MOD)));
 			}
 		}
 	}
@@ -234,7 +234,8 @@ public class BitSet implements Iterable<Boolean>, IBitSet {
 	 * @throws {@link IndexOutOfBoundsException} if position is not valid
 	 */
 	public Boolean off(int p) {
-		return ifValidPosition(p, () -> ((bucket[p >> LOG_64] &= ~(ONE_SET << (p & (MOD))))));
+		return ifValidPosition(p, () -> ((bucket[p >> LOG_64] &= ~(ONE_SET << (p & (MOD)))))); // TODO does functional
+																								// really needed
 	}
 
 	/**
@@ -356,6 +357,11 @@ public class BitSet implements Iterable<Boolean>, IBitSet {
 	 * Returns true if all bits set to 1
 	 */
 	public boolean allSet() {
+		/*
+		 * TODO tracking a onCount instance variable on update methods would get rid off
+		 * all of this but then on/off switches needs to do second call if current value
+		 * was false
+		 */
 		for (int i = 0; i < actualCapacity - 1; i++) {
 			if (bucket[i] != ALL_SET) {
 				return false;
@@ -363,7 +369,7 @@ public class BitSet implements Iterable<Boolean>, IBitSet {
 		}
 
 		long val = bucket[actualCapacity - 1];
-		int count = val == ALL_SET ? 1 << LOG_64 : 0;
+		int count = val == ALL_SET ? LONG_SIZE : 0;
 		if (count == 0 && val != 0) {
 			do {
 				count++;
@@ -562,7 +568,7 @@ public class BitSet implements Iterable<Boolean>, IBitSet {
 
 	/**
 	 *
-	 * toBinaryString method: returns a binary string representing this list this
+	 * toBinaryString method: returns a binary string representing this set, this
 	 * method is not efficient for large sets and shouldnt be called
 	 *
 	 * 
@@ -695,7 +701,7 @@ public class BitSet implements Iterable<Boolean>, IBitSet {
 	private static final int getActaulCapacity(int capacity) {
 		int diff = capacity & MOD;
 		int actualCapacity = (capacity - diff) >>> LOG_64;
-		actualCapacity += Math.min(1, diff);
+		actualCapacity += Math.min(1, diff); //TODO maybe  https://graphics.stanford.edu/~seander/bithacks.html#IntegerMinOrMax
 		return actualCapacity;
 	}
 
