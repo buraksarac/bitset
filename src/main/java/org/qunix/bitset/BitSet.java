@@ -298,7 +298,27 @@ public class BitSet implements Iterable<Boolean>, IBitSet {
 			throw new IndexOutOfBoundsException();
 		}
 
-		throw new UnsupportedOperationException();
+		int indx = index >>> LOG_64;
+		long mask = (bucket[indx] & (-1l << indx)) >> 1;
+		long right = bucket[indx] & ((1 << indx - 1) - 1);
+		bucket[indx--] = mask | right;
+		while (indx >= 0) {
+			long slot = bucket[indx];
+
+		}
+		
+		@Test
+		public void testRemove() {
+			long l = 209715;
+			System.out.println(Long.toBinaryString(l));
+			int index = 4;
+			long mask = (l & (-1l << index)) >> 1;
+			long right = l & ((1 << index - 1) - 1);
+			System.out.println(Long.toBinaryString(mask));
+			System.out.println(Long.toBinaryString(right));
+			System.out.println(Long.toBinaryString(mask | right));
+
+		}
 
 	}
 
