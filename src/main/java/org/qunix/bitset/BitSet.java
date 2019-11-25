@@ -198,7 +198,7 @@ public class BitSet implements Iterable<Boolean>, IBitSet {
 
 		long val = bucket[actualCapacity - 1];
 		int count = val == ALL_SET ? 1 << LOG_64 : 0;
-		if (count == 0) {
+		if (count == 0 && val != 0) {
 			do {
 				count++;
 			} while ((val &= (val - 1)) > 0);
