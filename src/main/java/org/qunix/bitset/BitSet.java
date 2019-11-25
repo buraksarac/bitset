@@ -550,40 +550,27 @@ public class BitSet implements Iterable<Boolean>, IBitSet {
 	 *
 	 * remove method: removes bit from given position
 	 *
-	 * TODO: implementation
 	 *
 	 *
 	 * @param index void
 	 */
-	@Deprecated
 	public void remove(int index) {
 
-		if (index < 0 || index >= this.size) {
+		if (index < 0 || this.size < 1 || index >= this.size) {
 			throw new IndexOutOfBoundsException();
 		}
 
-		int indx = index >>> LOG_64;
-		long mask = (bucket[indx] & (-1l << indx)) >> 1;
-		long right = bucket[indx] & ((1 << indx - 1) - 1);
-		bucket[indx--] = mask | right;
-		while (indx >= 0) {
-			long slot = bucket[indx];
-
+		this.bucket[0] = shift(this.bucket[0], index);
+		// shift the rest
+		for (int i = 1; i < this.bucket.length; i++) {
+			this.bucket[i - 1] |= (this.bucket[i] & 1) << MOD;
+			this.bucket[i] >>>= 1;
 		}
-		
-		@Test
-		public void testRemove() {
-			long l = 209715;
-			System.out.println(Long.toBinaryString(l));
-			int index = 4;
-			long mask = (l & (-1l << index)) >> 1;
-			long right = l & ((1 << index - 1) - 1);
-			System.out.println(Long.toBinaryString(mask));
-			System.out.println(Long.toBinaryString(right));
-			System.out.println(Long.toBinaryString(mask | right));
-
+		// every 64 drop tail except first one
+		if (--this.size > 1 && (this.size & MOD) == 0) {
+			bucket = Arrays.copyOf(bucket, --actualCapacity);
+			this.capacity -= LONG_SIZE;
 		}
-
 	}
 
 	/**
@@ -721,8 +708,26 @@ public class BitSet implements Iterable<Boolean>, IBitSet {
 	private static final int getActaulCapacity(int capacity) {
 		int diff = capacity & MOD;
 		int actualCapacity = (capacity - diff) >>> LOG_64;
-		actualCapacity += Math.min(1, diff); //TODO maybe  https://graphics.stanford.edu/~seander/bithacks.html#IntegerMinOrMax
+		actualCapacity += Math.min(1, diff); // TODO maybe
+												// https://graphics.stanford.edu/~seander/bithacks.html#IntegerMinOrMax
 		return actualCapacity;
+	}
+
+	/**
+	 *
+	 * shift method: removes bit from given position and sets last bit as 0
+	 *
+	 * 
+	 *
+	 *
+	 * @param l
+	 * @param index
+	 * @return long
+	 */
+	private static final long shift(long x, int index) {
+		// see https://stackoverflow.com/a/21259816/706695
+		long mask = -1l << index;
+		return ((x & ~mask) | ((x >>> 1) & mask));
 	}
 
 }

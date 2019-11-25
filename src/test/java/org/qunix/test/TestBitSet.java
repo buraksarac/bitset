@@ -338,4 +338,51 @@ public class TestBitSet {
 				.forEach(i -> assertEquals(i % 2 == 0, set.get(i)));
 
 	}
+	
+	@Test
+	public void testRemove() {
+		BitSet set = new BitSet(128);
+		set.resize(128);
+		for (int i = 0; i < 128; i = i + 2) {
+			set.onOff(i, true);
+		}
+		set.remove(0);
+		assertTrue(set.size() == 127);
+		for (int i = 0; i < 127; i++) {
+			assertEquals(i % 2 != 0, set.get(i));
+		}
+
+	}
+
+	@Test
+	public void testRemove2() {
+		BitSet set = new BitSet(128);
+		set.add(true);
+		set.remove(0);
+		assertTrue(set.size() == 0);
+
+	}
+
+	@Test
+	public void testRemove3() {
+		BitSet set = new BitSet(64);
+		set.resize(65);
+		set.on(64);
+		set.remove(63);
+		assertTrue(set.size() == 64);
+		assertTrue(set.get(63));
+	}
+	
+	@Test(expected = IndexOutOfBoundsException.class)
+	public void testRemove4() {
+		BitSet set = new BitSet(64);
+		set.remove(0);
+	}
+	
+	@Test(expected = IndexOutOfBoundsException.class)
+	public void testRemove5() {
+		BitSet set = new BitSet(64);
+		set.add(true);
+		set.remove(1);
+	}
 }
