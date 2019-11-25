@@ -290,6 +290,7 @@ public class BitSet implements Iterable<Boolean>, IBitSet {
 		on(0, this.size);
 	}
 
+	@Deprecated
 	public void remove(int index) {
 
 		if (index < 0 || index >= this.size) {
