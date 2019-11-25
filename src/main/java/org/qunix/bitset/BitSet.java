@@ -190,7 +190,7 @@ public class BitSet implements Iterable<Boolean>, IBitSet {
 	 * 
 	 * Offset can be negative as fas as it doesnt out bound beginning (index 0) or
 	 * positive as far as doesnt reach end of set (size - 1) or 0 that only start
-	 * parameter will be on
+	 * parameter will be off
 	 * 
 	 *
 	 *
