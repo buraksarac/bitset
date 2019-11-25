@@ -4,8 +4,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Optional;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * COLLECTION IMPLEMENTATION NOT COMPLETE!!!
@@ -13,8 +17,20 @@ import java.util.function.Supplier;
  * @author bsarac
  *
  */
-public class BitSet implements Iterable<Boolean>, IBitSet, Collection<Boolean> {
+public class BitSet implements Iterable<Boolean>, IBitSet {
 
+	/**
+	 * 
+	 */
+	private static final long ONE_SET = 1L;
+	/**
+	 * 
+	 */
+	private static final long NONE_SET = 0l;
+	/**
+	 * 
+	 */
+	private static final long ALL_SET = -1l;
 	private static final int DEFAULT_CAPACITY = 64;
 	private static final transient long[] DEFAULTCAPACITY_EMPTY_ELEMENTDATA = {};
 
@@ -26,7 +42,8 @@ public class BitSet implements Iterable<Boolean>, IBitSet, Collection<Boolean> {
 	private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
 
 	private static final int LOG_64 = 6;
-	private static final int MOD = (1 << LOG_64) - 1;
+	private static final int LONG_SIZE = 1 << LOG_64;
+	private static final int MOD = LONG_SIZE - 1;
 
 	protected transient long[] bucket;
 	protected int actualCapacity;
@@ -49,7 +66,7 @@ public class BitSet implements Iterable<Boolean>, IBitSet, Collection<Boolean> {
 	}
 
 	public Boolean get(int p) {
-		return ifValidPosition(p, () -> ((bucket[p >> LOG_64] & (1L << (p & (MOD))))));
+		return ifValidPosition(p, () -> ((bucket[p >> LOG_64] & (ONE_SET << (p & (MOD))))));
 	}
 
 	public byte getByte(int p) {
@@ -57,7 +74,7 @@ public class BitSet implements Iterable<Boolean>, IBitSet, Collection<Boolean> {
 	}
 
 	public Boolean flip(int p) {
-		return ifValidPosition(p, () -> ((bucket[p >> LOG_64] ^= (1L << (p & (MOD))))));
+		return ifValidPosition(p, () -> ((bucket[p >> LOG_64] ^= (ONE_SET << (p & (MOD))))));
 	}
 
 	public Boolean onOff(int p, boolean on) {
@@ -65,11 +82,62 @@ public class BitSet implements Iterable<Boolean>, IBitSet, Collection<Boolean> {
 	}
 
 	public Boolean on(int p) {
-		return ifValidPosition(p, () -> ((bucket[p >> LOG_64] |= (1L << (p & (MOD))))));
+		return ifValidPosition(p, () -> ((bucket[p >> LOG_64] |= (ONE_SET << (p & (MOD))))));
+	}
+
+	public void on(int startInclusive, int offset) {
+		int endInclusive = startInclusive + offset;
+		if (startInclusive < 0 || startInclusive >= this.size || endInclusive > this.size) {
+			throw new IndexOutOfBoundsException();
+		}
+		if (offset == 0) {
+			on(startInclusive);
+		} else if (offset < 0) {
+			on(endInclusive + 1, -offset);
+		} else {
+			int index, endIndex;
+
+			if ((index = startInclusive >> LOG_64) == (endIndex = endInclusive - 1 >> LOG_64)) {
+
+				bucket[index] |= ALL_SET >>> (LONG_SIZE - offset) << startInclusive;
+
+			} else {
+				bucket[index] |= ALL_SET << (startInclusive & MOD);
+				for (int i = index + 1; i < endIndex; i++) {
+					bucket[i] = ALL_SET;
+				}
+				bucket[endIndex] |= ALL_SET >>> (LONG_SIZE - (endInclusive & MOD));
+			}
+		}
+
+	}
+
+	public void off(int startInclusive, int offset) {
+		int endInclusive = startInclusive + offset;
+		if (startInclusive < 0 || startInclusive >= this.size || endInclusive > this.size) {
+			throw new IndexOutOfBoundsException();
+		}
+		if (offset == 0) {
+			off(startInclusive);
+		} else if (offset < 0) {
+			off(endInclusive + 1, -offset);
+		} else {
+			int index, endIndex;
+
+			if ((index = startInclusive >> LOG_64) == (endIndex = endInclusive - 1 >> LOG_64)) {
+				bucket[index] &= ~(ALL_SET >>> (LONG_SIZE - offset) << startInclusive);
+			} else {
+				bucket[index] &= ~(ALL_SET << (startInclusive & MOD));
+				for (int i = index + 1; i < endIndex; i++) {
+					bucket[i] = NONE_SET;
+				}
+				bucket[endIndex] &= ~(ALL_SET >>> (LONG_SIZE - (endInclusive & MOD)));
+			}
+		}
 	}
 
 	public Boolean off(int p) {
-		return ifValidPosition(p, () -> ((bucket[p >> LOG_64] &= ~(1L << (p & (MOD))))));
+		return ifValidPosition(p, () -> ((bucket[p >> LOG_64] &= ~(ONE_SET << (p & (MOD))))));
 	}
 
 	public <T> Optional<T> ifOn(int position, Supplier<T> supplier) {
@@ -88,36 +156,48 @@ public class BitSet implements Iterable<Boolean>, IBitSet, Collection<Boolean> {
 
 	public <T> void forEach(BiConsumer<Boolean, Integer> func) {
 		for (int i = 0; i < this.size; i++) {
-			func.accept((bucket[i >> LOG_64] & (1L << (i & (MOD)))) != 0, i);
+			func.accept((bucket[i >> LOG_64] & (ONE_SET << (i & (MOD)))) != 0, i);
 		}
 	}
 
-	public void reSize(int newSize) {
-		ensureCapacityInternal(newSize);
-		this.size = newSize;
+	public void resize(int newSize) {
+		if (newSize < this.size) {
+			throw new IndexOutOfBoundsException();
+		}
+		if (size < newSize) {
+			ensureCapacityInternal(newSize);
+			this.size = newSize;
+		}
+
 	}
 
 	private Boolean ifValidPosition(int position, Supplier<Long> supplier) {
-		if (position >= 0 && position <= this.size) {
+		if (position >= 0 && position < this.size) {
 			return supplier.get() != 0;
 		}
 		throw new ArrayIndexOutOfBoundsException(position + " is not valid for size " + this.size);
 
 	}
 
-	public IBitSet immutableCopy() {
+	public IBitSet immutable() {
 		return new ImmutableBitSet(this);
+	}
+
+	public LazyBitSet lazy() {
+		LazyBitSet lazy = new LazyBitSet(this);
+		lazy.merge();
+		return lazy;
 	}
 
 	public boolean allSet() {
 		for (int i = 0; i < actualCapacity - 1; i++) {
-			if (bucket[i] != -1) {
+			if (bucket[i] != ALL_SET) {
 				return false;
 			}
 		}
 
 		long val = bucket[actualCapacity - 1];
-		int count = val == ~0 ? 1 << LOG_64 : 0;
+		int count = val == ALL_SET ? 1 << LOG_64 : 0;
 		if (count == 0) {
 			do {
 				count++;
@@ -132,6 +212,30 @@ public class BitSet implements Iterable<Boolean>, IBitSet, Collection<Boolean> {
 		for (int i = 0; i < actualCapacity; i++) {
 			bucket[i] = 0;
 		}
+	}
+
+	public int onCount() {
+		int count = 0;
+		for (int i = 0; i < actualCapacity; i++) {
+			if (bucket[i] == ALL_SET) {
+				count += LONG_SIZE;
+			} else if (bucket[i] == 0) {
+				// ignore
+			} else {
+				long val = bucket[i];
+				do {
+					count++;
+				} while ((val &= (val - 1)) > 0);
+			}
+
+		}
+
+		return count;
+
+	}
+
+	public int offCount() {
+		return this.size - onCount();
 	}
 
 	@Override
@@ -152,72 +256,18 @@ public class BitSet implements Iterable<Boolean>, IBitSet, Collection<Boolean> {
 		};
 	}
 
-	@Override
+	public Stream<Boolean> stream() {
+		return StreamSupport.stream(Spliterators.spliteratorUnknownSize(this.iterator(), Spliterator.DISTINCT), false);
+	}
+
 	public int size() {
 		return this.size;
 	}
 
-	@Override
 	public boolean isEmpty() {
 		return this.size == 0;
 	}
 
-	/**
-	 * COLLECTION IMPLEMENTATION NOT COMPLETE!!!
-	 * 
-	 * @author bsarac
-	 *
-	 */
-	@Deprecated
-	@Override
-	public boolean contains(Object o) {
-		if (o == null || !(o instanceof Boolean)) {
-			return false;
-		}
-		boolean other = (boolean) o;
-		return this.stream().filter(b -> b == other).findFirst().isPresent();
-	}
-
-	/**
-	 * COLLECTION IMPLEMENTATION NOT COMPLETE!!!
-	 * 
-	 * @author bsarac
-	 *
-	 */
-	@Deprecated
-	@Override
-	public Object[] toArray() {
-		return this.toArray(null);
-	}
-
-	/**
-	 * COLLECTION IMPLEMENTATION NOT COMPLETE!!!
-	 * 
-	 * @author bsarac
-	 *
-	 */
-	@Deprecated
-	@Override
-	public <T> T[] toArray(T[] a) {
-		if (this.size == 0) {
-			return a;
-		}
-		Object[] array = a == null || a.length < this.size ? new Object[this.size] : a;
-
-		Class<?> klazz = a.getClass().getComponentType();
-
-		if (klazz.isPrimitive()) {
-			this.forEach((b, i) -> array[i] = b ? 1 : 0);
-		} else if (klazz.isAssignableFrom(Boolean.class)) {
-			this.forEach((b, i) -> array[i] = b);
-		} else {
-			throw new UnsupportedOperationException();
-		}
-
-		return a;
-	}
-
-	@Override
 	public boolean add(Boolean e) {
 		if (e == null) {
 			throw new NullPointerException("Can not add null value");
@@ -227,70 +277,59 @@ public class BitSet implements Iterable<Boolean>, IBitSet, Collection<Boolean> {
 	}
 
 	/**
-	 * COLLECTION IMPLEMENTATION NOT COMPLETE!!!
 	 * 
 	 * @author bsarac
 	 *
 	 */
-	@Deprecated
-	@Override
-	public boolean containsAll(Collection<?> c) {
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * COLLECTION IMPLEMENTATION NOT COMPLETE!!!
-	 * 
-	 * @author bsarac
-	 *
-	 */
-	@Deprecated
-	@Override
-	public boolean addAll(Collection<? extends Boolean> c) {
+	public void addAll(Collection<? extends Boolean> c) {
 		c.forEach(this::add);
-		return true;
 	}
 
-	/**
-	 * COLLECTION IMPLEMENTATION NOT COMPLETE!!!
-	 * 
-	 * @author bsarac
-	 *
-	 */
+	public void allOff() {
+		off(0, this.size);
+	}
+
+	public void allOn() {
+		on(0, this.size);
+	}
+
 	@Deprecated
-	@Override
-	public boolean retainAll(Collection<?> c) {
+	public void remove(int index) {
+
+		if (index < 0 || index >= this.size) {
+			throw new IndexOutOfBoundsException();
+		}
+
 		throw new UnsupportedOperationException();
 	}
 
-	/**
-	 * COLLECTION IMPLEMENTATION NOT COMPLETE!!!
-	 * 
-	 * @author bsarac
-	 *
-	 */
-	@Deprecated
-	@Override
-	public boolean removeAll(Collection<?> c) {
-		throw new UnsupportedOperationException();
-	}
+	public String toBinaryString() {
+		if (this.isEmpty()) {
+			return "";
+		}
+		StringBuilder sb = new StringBuilder(this.size);
 
-	@Override
-	public void clear() {
-		reset();
-	}
+		int indx = this.actualCapacity - 1;
+		String val = null;
+		int remaining = (this.size & MOD);
+		if (remaining > 0) {
+			val = Long.toBinaryString(this.bucket[indx--]);
+			int diff = remaining - val.length();
+			for (int i = 0; i < diff; i++) {
+				sb.append('0');
+			}
+			sb.append(val);
+		}
+		while (indx >= 0) {
+			val = Long.toBinaryString(this.bucket[indx--]);
+			int diff = 64 - val.length();
+			for (int i = 0; i < diff; i++) {
+				sb.append('0');
+			}
+			sb.append(val);
+		}
 
-	/**
-	 * COLLECTION IMPLEMENTATION NOT COMPLETE!!!
-	 * 
-	 * @author bsarac
-	 *
-	 */
-	@Deprecated
-	@Override
-	public boolean remove(Object o) {
-		// TODO Auto-generated method stub
-		return false;
+		return sb.toString();
 	}
 
 	private static int calculateCapacity(long[] bucket, int minCapacity) {

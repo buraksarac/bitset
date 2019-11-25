@@ -9,6 +9,11 @@ public class LazyBitSet extends BitSet implements IBitSet {
 		backed = new BitSet(capacity);
 	}
 
+	public LazyBitSet(BitSet bitSet) {
+		super(bitSet.capacity);
+		backed = bitSet;
+	}
+
 	public void merge() {
 		for (int i = 0; i < actualCapacity; i++) {
 			this.bucket[i] = this.backed.bucket[i];
