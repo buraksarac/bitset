@@ -2,8 +2,17 @@ package org.qunix.bitset;
 
 import java.util.Collection;
 
+/**
+ *
+ * Immutable bitset
+ *
+ * @author bsarac types 2019-11-25 13:43:19 +0100
+ */
 public final class ImmutableBitSet extends BitSet implements IBitSet {
 
+	/**
+	 * Default constructor
+	 */
 	ImmutableBitSet(BitSet bitset) {
 		super(bitset.size);
 		System.arraycopy(bitset.bucket, 0, this.bucket, 0, this.actualCapacity);
@@ -68,7 +77,7 @@ public final class ImmutableBitSet extends BitSet implements IBitSet {
 	public void allOn() {
 		throw new UnsupportedOperationException();
 	}
-	
+
 	@Override
 	public void remove(int index) {
 		throw new UnsupportedOperationException();
