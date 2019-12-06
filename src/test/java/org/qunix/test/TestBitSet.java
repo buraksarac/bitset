@@ -353,6 +353,36 @@ public class TestBitSet {
 		}
 
 	}
+	
+	@Test
+	public void testRemoveLarge() {
+		BitSet set = new BitSet(256);
+		IntStream.range(0, 256).mapToObj(i -> i % 2 == 0).forEach(set::add);
+		for (int i = 0; i < 256; i++) {
+			assertEquals(i % 2 == 0, set.get(i));
+		}
+		set.remove(64);
+		assertTrue(set.size() == 255);
+		for (int i = 0; i < 64; i++) {
+			assertEquals(i % 2 == 0, set.get(i));
+		}
+		for (int i = 64; i < 255; i++) {
+			assertEquals(i % 2 != 0, set.get(i));
+		}
+		set.remove(128);
+		assertTrue(set.size() == 254);
+		for (int i = 0; i < 64; i++) {
+			assertEquals(i % 2 == 0, set.get(i));
+		}
+		for (int i = 64; i < 128; i++) {
+			assertEquals(i % 2 != 0, set.get(i));
+		}
+		for (int i = 128; i < 254; i++) {
+			assertEquals(i % 2 == 0, set.get(i));
+		}
+		
+		
+	}
 
 	@Test
 	public void testRemove2() {
@@ -360,7 +390,6 @@ public class TestBitSet {
 		set.add(true);
 		set.remove(0);
 		assertTrue(set.size() == 0);
-
 	}
 
 	@Test

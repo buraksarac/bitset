@@ -552,17 +552,18 @@ public class BitSet implements Iterable<Boolean>, IBitSet {
 	 *
 	 *
 	 *
-	 * @param index void
+	 * @param position void
 	 */
-	public void remove(int index) {
+	public void remove(int position) {
 
-		if (index < 0 || this.size < 1 || index >= this.size) {
+		if (position < 0 || this.size < 1 || position >= this.size) {
 			throw new IndexOutOfBoundsException();
 		}
 
-		this.bucket[0] = shift(this.bucket[0], index);
+		int begin = position >> LOG_64;
+		this.bucket[begin] = shift(this.bucket[begin], position & MOD);
 		// shift the rest
-		for (int i = 1; i < this.bucket.length; i++) {
+		for (int i = begin + 1; i < this.bucket.length; i++) {
 			this.bucket[i - 1] |= (this.bucket[i] & 1) << MOD;
 			this.bucket[i] >>>= 1;
 		}
