@@ -123,6 +123,16 @@ public class LazyBitSet extends BitSet implements IBitSet {
 	public void remove(int index) {
 		backed.remove(index);
 	}
+	
+	@Override
+	public void resize(int newSize) {
+		backed.resize(newSize);
+	}
+	
+	@Override
+	public int size() {
+		return backed.size;
+	}
 
 	/**
 	 *
